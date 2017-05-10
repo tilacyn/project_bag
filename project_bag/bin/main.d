@@ -1,1 +1,2 @@
-bin/main.o: src/main.cpp src/..\include\records.h
+bin/main.o: src/main.cpp include/write.h include/select.h \
+ include/records.h
