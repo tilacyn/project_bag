@@ -72,11 +72,7 @@ long long Record::record_len(std::ifstream& ifs){
 }
 
 void Chunk::seq_id_to_conn(std::ifstream& ifs){
-    std::cout << pos  << " " << data_start() << "\n";
     ifs.seekg(data_start());
-    //readv(kek, 4);
-    //std::cout << kek << "\n";
-    //assert(0);
     while(ifs.tellg() < data_end()){
         char op = read_op(ifs);
         if(op == 0x07){
@@ -86,7 +82,6 @@ void Chunk::seq_id_to_conn(std::ifstream& ifs){
             connections[c.conn] = c;
             assert(indexdata.find(c.conn) != indexdata.end());
             connections[c.conn].id = indexdata[c.conn];
-            std::cout << "Another id linked to connection: " << connections[c.conn].pos << " " << indexdata[c.conn].pos << "\n";
         } else{
             Record r;
             r.skip_header(ifs);

@@ -37,7 +37,6 @@ void write(BagHeader& bh, std::ifstream& ifs, std::ofstream& ofs){
 }
 
 void write(Chunk& c, Select& s, std::ifstream& ifs, std::ofstream& ofs){
-    std::cout << "We gonna write Chunk, Header Len: " << c.header_len << "\n";
     ifs.seekg(c.pos + 4);
     writev(c.header_len, 4);
     while(ifs.tellg() < c.header_end()){
@@ -48,7 +47,6 @@ void write(Chunk& c, Select& s, std::ifstream& ifs, std::ofstream& ofs){
         std::string field_name = read_name(ifs);
         write_name(field_name, ofs);
         if(field_name == "size"){
-            std::cout << "We gonna write chunk size\n";
             writev(c.new_size, 4);
         } else{
             while((long long)ifs.tellg() < start + field_len + 4){
@@ -60,7 +58,6 @@ void write(Chunk& c, Select& s, std::ifstream& ifs, std::ofstream& ofs){
         }
     }
     writev(c.data_len, 4);
-    std::cout << "Chunk Header written\n";
     for(unsigned int i = 0; i < c.conns.size(); i++){
         if(c.connections[c.conns[i]].id.new_count != 0){
             write(c.data_start(), c.connections[c.conns[i]], s, ifs, ofs);

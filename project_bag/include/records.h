@@ -146,8 +146,6 @@ public:
         int kek;
         readv(kek, 4);
         ifs.seekg((long long)start + 4 + c.header_len + c.data_len);
-        std::cout << "Next header len: " << kek << "\n";
-        //std::cout << "READOP AFTER CONNECTION: " << (int)read_op(ifs) << "\n";
         return ifs;
     }
     std::vector <MessageData> messages;
@@ -232,35 +230,6 @@ public:
         return ifs;
     }
     void seq_id_to_conn(std::ifstream& ifs);
-    void read_connections(std::ifstream& ifs, std::vector <IndexData>& indexdata){
-        std::cout << "connection reading started\n";
-        //std::cout << compression << "\n";
-        if(compression != "none") return;
-        //std::cout << "kek";
-        ifs.seekg(pos);
-        ifs.seekg((long long) ifs.tellg() + 8 + header_len);
-        while((long long)ifs.tellg() < pos + data_len + 8 + header_len){
-            char op = read_op(ifs);
-            if(op == 0x07){
-                Connection con;
-                ifs >> con;
-                IndexData id;
-                id.conn = con.conn;
-                con.id = *std::lower_bound(indexdata.begin(), indexdata.end(), id);
-                connections[con.conn] = con;
-                std::cout << "New connection\n" << con.conn << " " << con.id.count << "\n";
-            } else if(op == 0x02){
-                MessageData md;
-                ifs >> md;
-                connections[md.conn].messages.push_back(md);
-                std::cout << "New message\n" << md.conn << "\n";
-            } else{
-                std::cout << (op == 0x03) << (op == 0x04) << (op == 0x05) << (op == 0x06) << "\n";
-                std::cout << (int)op << "\n";
-                assert(0);
-            }
-        }
-    }
 };
 
 bool compare_chunks(Chunk& c, long long offset);

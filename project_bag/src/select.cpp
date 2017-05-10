@@ -5,7 +5,6 @@ void Select::sift_index_data(long long chunk_data_start, long long time_start, l
     ifs.seekg(c.id.data_start() - 4);
     int kek;
     readv(kek, 4);
-    std::cout << c.id.count << "\n";
     for(int i = 0; i < c.id.count; i++){
         long long time;
         readv(time, 8);
@@ -32,24 +31,17 @@ void Select::make_map(long long time_start, long long time_end, std::string topi
     c.ci.new_count = 0;
     for(unsigned int i = 0; i < c.conns.size(); i++){
         if(topic != c.connections[c.conns[i]].topic && topic != "") continue;
-        std::cout << "This index data is gonna be sifted\n";
-        // Посчитаем оффсет этого коннекшена
         offset += c.connections[c.conns[i]].data_end() - c.connections[c.conns[i]].pos;
         c.connections[c.conns[i]].next_message_offset = offset;
         sift_index_data(c.data_start(), time_start, time_end, c.connections[c.conns[i]], ifs);
-        // Посчитаем новый размер id.data
         c.connections[c.conns[i]].id.new_data_len = c.connections[c.conns[i]].id.new_count * 12;
-        // Посчитаем ci.count
         if(c.connections[c.conns[i]].id.new_count != 0){
             c.ci.new_count++;
         }
-        std::cout << "Another connection id.new_count: " << c.connections[c.conns[i]].id.new_count << "\n";
         c.new_index_data_size += c.connections[c.conns[i]].id.new_data_len + 8 + c.connections[c.conns[i]].id.header_len;
         offset += c.connections[c.conns[i]].new_size;
     }
     c.new_data_len = offset;
-    std::cout << "New Data len: " << c.new_data_len << "\n";
-    std::cout << "New ci count: " << c.ci.new_count << "\n";
 }
 
 void make_map(long long time_start, long long time_end, std::string topic, std::vector<Chunk>& chunks, std::vector<Select>& selects,
@@ -57,7 +49,6 @@ void make_map(long long time_start, long long time_end, std::string topic, std::
     bh.new_index_pos = bh.data_end();
     for(unsigned int i = 0; i < chunks.size(); i++){
         chunks[i].ci.new_chunk_pos = bh.new_index_pos;
-        std::cout << "Another Chunk in *MAKE_MAP*\n";
         Select s;
         s.make_map(time_start, time_end, topic, chunks[i], ifs);
         selects.push_back(s);

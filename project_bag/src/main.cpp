@@ -16,35 +16,28 @@ void read_records(const char* in_file){
     readv(first_symbols, 13);
     while(ifs.peek() != std::ifstream::traits_type::eof()){
         char op = read_op(ifs);
-        cout << ifs.tellg() << "\n";
         if(op == 0x02){
             MessageData md;
             ifs >> md;
-            cout << "Record Info md " << md.header_len << " " << md.data_len << "\n";
         } else if(op == 0x04){
             IndexData id;
             ifs >> id;
             assert(!chunks.empty());
-            cout << "Record Info id " << id.header_len << " " << id.data_len << " " << id.conn << "\n";
             chunks[chunks.size() - 1].indexdata[id.conn] = id;
         } else if(op == 0x06){
             ChunkInfo ci;
             ifs >> ci;
-            cout << "Record Info ci " << ci.header_len << " " << ci.data_len << "\n";
             chunkinfo.push_back(ci);
         } else if(op == 0x03){
             ifs >> bh;
-            cout << "Record Info bh " << bh.header_len << " " << bh.data_len << "\n";
         } else if(op == 0x05){
             Chunk c;
             ifs >> c;
-            cout << "Record Info ch " << c.header_len << " " << c.data_len << "\n";
             chunks.push_back(c);
         } else if(op == 0x07){
             Connection c;
             ifs >> c;
             connections.push_back(c);
-            cout << "Record Info con " << c.header_len << " " << c.data_len << "\n";
         }
     }
     cout << "Reading finished\n";
@@ -58,6 +51,7 @@ void read_records(const char* in_file){
 void select_data(const char* in_file, long long time_start, long long time_end, string topic){
     ifstream ifs(in_file, ios::binary);
     make_map(time_start, time_end, topic, chunks, selects, bh, ifs);
+    cout << "Map Made\n";
 }
 
 void write_file(const char* in_file, const char* out_file){
@@ -65,11 +59,10 @@ void write_file(const char* in_file, const char* out_file){
     ofstream ofs(out_file, ios::binary);
 
     writev(first_symbols, 13);
-    cout << "LOL\n";
     write(bh, ifs, ofs);
     write(selects, chunks, ifs, ofs);
-    cout << "wow";
     write_all_the_chunk_info(chunks, ifs, ofs);
+    cout << "New file created\n";
 }
 
 string make_str(char* arr){
@@ -103,9 +96,7 @@ int main(int argc, char* argv[]){
 
     read_records(in_file);
     select_data(in_file, time_start, time_end, "");
-    cout << "Map made\n";
     write_file(in_file, out_file);
-    cout << "Writting ended\n";
     delete[] in_file;
     delete[] out_file;
     return 0;
