@@ -125,8 +125,7 @@ public:
     std::string topic;
     int conn;
     long long new_size;
-    bool has_any_suitable_messages;
-    int next_message_offset;
+    int new_offset;
     friend std::ifstream& operator>>(std::ifstream& ifs, Connection& c){
         c.pos = ifs.tellg();
         readv(c.header_len, 4);

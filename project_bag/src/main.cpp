@@ -2,40 +2,21 @@
 
 using namespace std;
 
+vector <Chunk> chunks;
+vector <Connection> connections;
+vector <ChunkInfo> chunkinfo;
+vector <IndexData> indexdata;
+vector <Select> selects;
+BagHeader bh;
 
-int main(int argc, char* argv[]){
+char* first_symbols = new char[20];
 
-    /*
-    map <int, int> mapka;
-    mapka[0] = 0, mapka[4] = 40, mapka[6] = -120;
-    sort(mapka.begin(), mapka.end());
-    for(std::map<int, int>::iterator i = mapka.begin(); i < mapka.end(); i++){
-        //std::cout << i->first << " " << i->second << "\n";
-
-    }
-
-
-
-    assert(0);
-    */
-    vector <Chunk> chunks;
-    vector <Connection> connections;
-    vector <ChunkInfo> chunkinfo;
-    vector <IndexData> indexdata;
-    std::ifstream ifs("example.bag", std::ios::binary);
-    std::cout << "IFS ZAVEDEN\n";
-    ifs.ignore(13);
-    /*
-    BagHeader bh;
-    ifs >> bh;
-    std::cout << "Header len " << bh.header_len << "\n";
-    std::cout << "Data len" << bh.data_len << "\n";
-    std::cout << "Index pos " << bh.index_pos << "\n";
-    std::cout << "Chunk count " << bh.chunk_count << "\n";
-    std::cout << "Conn count " << bh.conn_count << "\n";
-    */
+void read_records(const char* in_file){
+    std::ifstream ifs(in_file, std::ios::binary);
+    readv(first_symbols, 13);
     while(ifs.peek() != std::ifstream::traits_type::eof()){
         char op = read_op(ifs);
+        cout << ifs.tellg() << "\n";
         if(op == 0x02){
             MessageData md;
             ifs >> md;
@@ -52,7 +33,6 @@ int main(int argc, char* argv[]){
             cout << "Record Info ci " << ci.header_len << " " << ci.data_len << "\n";
             chunkinfo.push_back(ci);
         } else if(op == 0x03){
-            BagHeader bh;
             ifs >> bh;
             cout << "Record Info bh " << bh.header_len << " " << bh.data_len << "\n";
         } else if(op == 0x05){
@@ -63,25 +43,70 @@ int main(int argc, char* argv[]){
         } else if(op == 0x07){
             Connection c;
             ifs >> c;
-            //c.skip_header(ifs);
-            //c.skip_data(ifs);
             connections.push_back(c);
             cout << "Record Info con " << c.header_len << " " << c.data_len << "\n";
         }
     }
-   // std::ifstream ifs1("first_part_of_maze.bag", std::ios::binary);
-    std::cout << ifs.tellg() << "\n";
+    cout << "Reading finished\n";
     seq_chunk_to_info(chunks, chunkinfo);
-
-    cout << chunks.size() << "\n";
-    ifstream ifs1("example.bag", std::ios::binary);
+    ifstream ifs1(in_file, std::ios::binary);
     for(unsigned int i = 0; i < chunks.size(); i++){
         chunks[i].seq_id_to_conn(ifs1);
     }
+}
 
+void select_data(const char* in_file, long long time_start, long long time_end, string topic){
+    ifstream ifs(in_file, ios::binary);
+    make_map(time_start, time_end, topic, chunks, selects, bh, ifs);
+}
+
+void write_file(const char* in_file, const char* out_file){
+    ifstream ifs(in_file, ios::binary);
+    ofstream ofs(out_file, ios::binary);
+
+    writev(first_symbols, 13);
+    cout << "LOL\n";
+    write(bh, ifs, ofs);
+    write(selects, chunks, ifs, ofs);
+    cout << "wow";
+    write_all_the_chunk_info(chunks, ifs, ofs);
+}
+
+string make_str(char* arr){
+    string s = "";
+    for(unsigned int i = 0; i < strlen(arr); i++){
+        s += arr[i];
+    }
+    return s;
+}
+
+
+int main(int argc, char* argv[]){
+    char* in_file = new char[100];
+    char* out_file = new char[100];
     long long time_start = 0;
     long long time_end = 1e16;
-    Select s;
-    s.make_map(time_start, time_end, "", chunks, ifs1);
+    string topic;
+    for(int i = 1; i < argc; i++){
+        if(!strcmp(argv[i], "--in")){
+            strcpy(in_file, argv[++i]);
+        }else if(!strcmp(argv[i], "--out")){
+            strcpy(out_file, argv[++i]);
+        } else if(!strcmp(argv[i], "--time")){
+            time_start = atoll(argv[++i]);
+            time_end = atoll(argv[++i]);
+        } else if(!strcmp(argv[i], "--topic")){
+            topic = make_str(argv[++i]);
+        }
+    }
+
+
+    read_records(in_file);
+    select_data(in_file, time_start, time_end, "");
+    cout << "Map made\n";
+    write_file(in_file, out_file);
+    cout << "Writting ended\n";
+    delete[] in_file;
+    delete[] out_file;
     return 0;
 }

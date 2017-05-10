@@ -63,6 +63,8 @@ long long Record::header_end(){ return pos + 4 + header_len;}
 long long Record::data_end(){return pos + 8 + header_len + data_len;}
 long long Record::data_start(){return pos + 8 + header_len;}
 
+
+
 long long Record::record_len(std::ifstream& ifs){
     skip_header(ifs);
     skip_data(ifs);
