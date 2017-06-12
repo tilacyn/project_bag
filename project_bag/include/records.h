@@ -11,8 +11,10 @@
 #include <vector>
 #include <regex>
 
-#define readv(c, n) ifs.read((char*)&c, n)
-#define writev(c, n) ofs.write((char*)&c, n)
+#define readv(c, n) ifs.read(reinterpret_cast<char*>(&c), n)
+#define writev(c, n) ofs.write(reinterpret_cast<char*>(&c), n)
+
+const long long LLMAX = (((unsigned long long) -1) - 1) / 2;
 
 class Record{
 public:
@@ -100,6 +102,8 @@ public:
     int count;
     int new_count;
     long long new_size;
+    long long min_time;
+    long long max_time;
     friend std::ifstream& operator>>(std::ifstream& ifs, IndexData& id){
         id.pos = ifs.tellg();
         readv(id.header_len, 4);

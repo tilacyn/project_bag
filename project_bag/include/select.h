@@ -25,3 +25,6 @@ void sift_conn_in_chunk(Chunk& c, std::ifstream& ifs);
 void make_map(long long time_start, long long time_end, std::string topic, bool topic_regex,
               std::string msg_regex, BagFile& bf, std::ifstream& ifs);
 
+// Чтобы посчитать conn_count
+
+void count_conns(BagFile& bf);

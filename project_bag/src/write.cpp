@@ -142,7 +142,7 @@ void write(Chunk& c, Select& s, std::ifstream& ifs, std::ofstream& ofs){
             }
         }
     }
-
+    std::cout << "Chunk Data writing completed\n";
     for(std::map<int, IndexData>::iterator i = c.indexdata.begin(); i != c.indexdata.end(); i++){
         IndexData& id = i->second;
         if(id.new_count == 0) continue;
@@ -182,7 +182,11 @@ void write_chunk_info(Chunk& c, std::ifstream& ifs, std::ofstream& ofs){
             writev(c.ci.new_chunk_pos, 8);
         } else if(field_name == "count"){
             writev(c.ci.new_count, 4);
-        } else {
+        } else if(field_name == "start_time"){
+            writev(c.ci.new_start_time, 8);
+        } else if(field_name == "end_time"){
+            writev(c.ci.new_end_time, 8);
+        }else {
             while(ifs.tellg() < field_len + cur_pos){
                 char sym;
                 readv(sym, 1);
