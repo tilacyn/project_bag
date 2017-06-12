@@ -49,6 +49,25 @@ char read_op(std::ifstream& ifs){
     return op;
 }
 
+int read_conn(std::ifstream& ifs){
+    int conn = 0;
+    std::streampos start = ifs.tellg();
+    int header_len;
+    readv(header_len, 4);
+    while(ifs.tellg() - start < header_len){
+        int field_len;
+        std::string field_name;
+        readv(field_len, 4);
+        field_name = read_name(ifs);
+        if(field_name == "conn"){
+            readv(conn, 4);
+            ifs.seekg(start);
+            return conn;
+        } else ifs.seekg((long long)ifs.tellg() + field_len - field_name.length() - 1);
+    }
+    return conn;
+}
+
 void Record::skip_data(std::ifstream& ifs){
     readv(data_len, 4);
     ifs.seekg((long long) ifs.tellg() + data_len);
@@ -71,24 +90,6 @@ long long Record::record_len(std::ifstream& ifs){
     return header_len + data_len + 8;
 }
 
-void Chunk::seq_id_to_conn(std::ifstream& ifs){
-    ifs.seekg(data_start());
-    while(ifs.tellg() < data_end()){
-        char op = read_op(ifs);
-        if(op == 0x07){
-            Connection c;
-            ifs >> c;
-            conns.push_back(c.conn);
-            connections[c.conn] = c;
-            assert(indexdata.find(c.conn) != indexdata.end());
-            connections[c.conn].id = indexdata[c.conn];
-        } else{
-            Record r;
-            r.skip_header(ifs);
-            r.skip_data(ifs);
-        }
-    }
-}
 
 void seq_chunk_to_info(std::vector<Chunk>& chunks, std::vector<ChunkInfo>& chunkinfo){
     for(unsigned int i = 0; i < chunkinfo.size(); i++){

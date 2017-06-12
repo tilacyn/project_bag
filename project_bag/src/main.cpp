@@ -2,12 +2,7 @@
 
 using namespace std;
 
-vector <Chunk> chunks;
-vector <Connection> connections;
-vector <ChunkInfo> chunkinfo;
-vector <IndexData> indexdata;
-vector <Select> selects;
-BagHeader bh;
+BagFile bf;
 
 char* first_symbols = new char[20];
 
@@ -22,36 +17,44 @@ void read_records(const char* in_file){
         } else if(op == 0x04){
             IndexData id;
             ifs >> id;
-            assert(!chunks.empty());
-            chunks[chunks.size() - 1].indexdata[id.conn] = id;
+            cout << "Index Data: " << id.conn << " " << id.header_len << "\n";
+            assert(!bf.chunks.empty());
+            bf.chunks[bf.chunks.size() - 1].indexdata[id.conn] = id;
         } else if(op == 0x06){
             ChunkInfo ci;
             ifs >> ci;
-            chunkinfo.push_back(ci);
+            cout << "Chunk Info: " << ci.data_end() << " " << ci.pos << "\n";
+            bf.chunkinfo.push_back(ci);
         } else if(op == 0x03){
-            ifs >> bh;
+            ifs >> bf.bh;
+            cout << "Bag Header: " << bf.bh.data_end() << "\n";
         } else if(op == 0x05){
             Chunk c;
             ifs >> c;
-            chunks.push_back(c);
+            cout << "Chunk: " << c.header_len << " " << c.data_len << " " << c.pos << "\n";
+            bf.chunks.push_back(c);
         } else if(op == 0x07){
             Connection c;
             ifs >> c;
-            connections.push_back(c);
+            cout << "Connection: " << c.conn << " " << c.topic << "\n";
+            //bf.connections.push_back(c);
+            bf.map_conn[c.conn] = c;
+            bf.map_conn[c.conn].has_any_suitable_messages = false;
         }
     }
-    cout << "Reading finished\n";
-    seq_chunk_to_info(chunks, chunkinfo);
-    ifstream ifs1(in_file, std::ios::binary);
-    for(unsigned int i = 0; i < chunks.size(); i++){
-        chunks[i].seq_id_to_conn(ifs1);
+    for(std::map<int, IndexData>::iterator i = bf.chunks[0].indexdata.begin(); i != bf.chunks[0].indexdata.end(); i++){
+        //cout << i->first << " " << i->second.count << "\n";
     }
+    cout << "Reading finished\n";
+    seq_chunk_to_info(bf.chunks, bf.chunkinfo);
+    ifs.close();
 }
 
 void select_data(const char* in_file, long long time_start, long long time_end, string topic){
     ifstream ifs(in_file, ios::binary);
-    make_map(time_start, time_end, topic, chunks, selects, bh, ifs);
+    make_map(time_start, time_end, topic, bf, ifs);
     cout << "Map Made\n";
+    ifs.close();
 }
 
 void write_file(const char* in_file, const char* out_file){
@@ -59,9 +62,10 @@ void write_file(const char* in_file, const char* out_file){
     ofstream ofs(out_file, ios::binary);
 
     writev(first_symbols, 13);
-    write(bh, ifs, ofs);
-    write(selects, chunks, ifs, ofs);
-    write_all_the_chunk_info(chunks, ifs, ofs);
+    write(bf.bh, ifs, ofs);
+    write(bf.selects, bf.chunks, ifs, ofs);
+    write(bf.map_conn, ifs, ofs);
+    write_all_the_chunk_info(bf.chunks, ifs, ofs);
     cout << "New file created\n";
 }
 

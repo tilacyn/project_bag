@@ -29,6 +29,8 @@ public:
 
 char read_op(std::ifstream& ifs);
 
+int read_conn(std::ifstream& ifs);
+
 std::string read_name(std::ifstream& ifs);
 
 void write_name(std::string str, std::ofstream& ofs);
@@ -94,6 +96,7 @@ public:
     int conn;
     int count;
     int new_count;
+    long long new_size;
     friend std::ifstream& operator>>(std::ifstream& ifs, IndexData& id){
         id.pos = ifs.tellg();
         readv(id.header_len, 4);
@@ -121,12 +124,10 @@ public:
 
 class Connection : public Record{
 public:
-    IndexData id;
+    //IndexData id;
     std::string topic;
     int conn;
-    long long new_size;
     bool has_any_suitable_messages;
-    int next_message_offset;
     friend std::ifstream& operator>>(std::ifstream& ifs, Connection& c){
         c.pos = ifs.tellg();
         readv(c.header_len, 4);
@@ -148,7 +149,6 @@ public:
         ifs.seekg((long long)start + 4 + c.header_len + c.data_len);
         return ifs;
     }
-    std::vector <MessageData> messages;
 };
 
 
@@ -200,8 +200,6 @@ public:
     int new_size;
     bool has_any_suitable_messages;
     std::map <int, IndexData> indexdata;
-    std::map <int, Connection> connections;
-    std::vector <int> conns;
     long long new_index_data_size;
 
     friend std::ifstream& operator>>(std::ifstream& ifs, Chunk& c){
@@ -229,9 +227,10 @@ public:
         c.skip_data(ifs);
         return ifs;
     }
-    void seq_id_to_conn(std::ifstream& ifs);
+    //void seq_id_to_conn(std::ifstream& ifs);
 };
 
 bool compare_chunks(Chunk& c, long long offset);
 
 void seq_chunk_to_info(std::vector<Chunk>& chunks, std::vector<ChunkInfo>& chunkinfo);
+

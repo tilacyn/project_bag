@@ -4,10 +4,10 @@
 void write(BagHeader& bh, std::ifstream& ifs, std::ofstream& ofs){
     writev(bh.header_len, 4);
     ifs.seekg(bh.pos + 4);
-    long long curpos = ifs.tellg();
-    while(ifs.tellg() < curpos + bh.header_end()){
+    while(ifs.tellg() < bh.header_end()){
         int field_len;
         readv(field_len, 4);
+        writev(field_len, 4);
         long long cur_pos = ifs.tellg();
         std::string field_name = read_name(ifs);
         write_name(field_name, ofs);
@@ -28,62 +28,18 @@ void write(BagHeader& bh, std::ifstream& ifs, std::ofstream& ofs){
     }
     writev(bh.data_len, 4);
     ifs.seekg((long long)ifs.tellg() + 4);
-    curpos = ifs.tellg();
-    while(ifs.tellg() < curpos + bh.data_len){
+    while(ifs.tellg() < bh.data_end()){
         char c;
         readv(c, 1);
         writev(c, 1);
     }
 }
 
-void write(Chunk& c, Select& s, std::ifstream& ifs, std::ofstream& ofs){
-    ifs.seekg(c.pos + 4);
-    writev(c.header_len, 4);
-    while(ifs.tellg() < c.header_end()){
-        long long start = ifs.tellg();
-        int field_len;
-        readv(field_len, 4);
-        writev(field_len, 4);
-        std::string field_name = read_name(ifs);
-        write_name(field_name, ofs);
-        if(field_name == "size"){
-            writev(c.new_size, 4);
-        } else{
-            while((long long)ifs.tellg() < start + field_len + 4){
-                //std::cout << "kek\n";
-                char sym;
-                readv(sym, 1);
-                writev(sym, 1);
-            }
-        }
-    }
-    writev(c.data_len, 4);
-    for(unsigned int i = 0; i < c.conns.size(); i++){
-        if(c.connections[c.conns[i]].id.new_count != 0){
-            write(c.data_start(), c.connections[c.conns[i]], s, ifs, ofs);
-        }
-    }
-    for(unsigned int i = 0; i < c.conns.size(); i++){
-        if(c.connections[c.conns[i]].id.new_count != 0){
-            write(c.connections[c.conns[i]].id, s, ifs, ofs);
-        }
-    }
-}
-
-
-void write(long long chunk_data_start, Connection& c, Select& s, std::ifstream& ifs, std::ofstream& ofs){
-    ifs.seekg(c.pos);
-    while(ifs.tellg() < c.data_end()){
-        char sym;
-        readv(sym, 1);
-        writev(sym, 1);
-    }
-    write_messages(chunk_data_start, c, s, ifs, ofs);
-}
 
 void write_all(std::ifstream& ifs, std::ofstream& ofs){
     int header_len;
     readv(header_len, 4);
+    writev(header_len, 4);
     long long start = ifs.tellg();
     while(ifs.tellg() < header_len + start){
         char c;
@@ -92,25 +48,12 @@ void write_all(std::ifstream& ifs, std::ofstream& ofs){
     }
     int data_len;
     readv(data_len, 4);
+    writev(data_len, 4);
     long long data_start = ifs.tellg();
     while(ifs.tellg() < data_len + data_start){
         char c;
         readv(c, 1);
         writev(c, 1);
-    }
-}
-
-void write_messages(long long chunk_data_start, Connection& c, Select& s, std::ifstream& ifs, std::ofstream& ofs){
-    ifs.seekg(c.id.data_start());
-    for(int i = 0; i < c.id.count; i++){
-        long long time;
-        readv(time, 8);
-        int offset;
-        readv(offset, 4);
-        if(s.new_offset.find(offset) != s.new_offset.end()){
-            ifs.seekg(offset + chunk_data_start); //Chunk pos Requested
-            write_all(ifs, ofs);
-        }
     }
 }
 
@@ -126,7 +69,6 @@ void write(IndexData& id, Select& s, std::ifstream& ifs, std::ofstream& ofs){
         write_name(field_name, ofs);
         if(field_name == "count"){
             writev(id.new_count, 4);
-            ifs.seekg((long long)ifs.tellg() + 4);
         } else{
             while((long long)ifs.tellg() < start + field_len){
                 char c;
@@ -134,11 +76,11 @@ void write(IndexData& id, Select& s, std::ifstream& ifs, std::ofstream& ofs){
                 writev(c, 1);
             }
         }
+        ifs.seekg(start + field_len);
     }
     ifs.seekg((long long)ifs.tellg() + 4);
-    long long cur_pos = ifs.tellg();
     writev(id.new_data_len, 4);
-    while((long long)ifs.tellg() < cur_pos + id.data_len){
+    while((long long)ifs.tellg() < id.data_end()){
         long long time;
         readv(time, 8);
         int offset;
@@ -149,6 +91,65 @@ void write(IndexData& id, Select& s, std::ifstream& ifs, std::ofstream& ofs){
         }
     }
 }
+
+
+void write(Chunk& c, Select& s, std::ifstream& ifs, std::ofstream& ofs){
+    ifs.seekg(c.ci.chunk_pos + 4);
+    writev(c.header_len, 4);
+
+    while(ifs.tellg() < c.header_end()){
+        long long start = ifs.tellg();
+        int field_len;
+        readv(field_len, 4);
+        writev(field_len, 4);
+        std::string field_name = read_name(ifs);
+        write_name(field_name, ofs);
+        if(field_name == "size"){
+            std::cout << "WOOOOOWOWOWOW\n";
+            writev(c.new_data_len, 4);
+        } else{
+            while((long long)ifs.tellg() < start + field_len + 4){
+                //std::cout << "kek\n";
+                char sym;
+                readv(sym, 1);
+                writev(sym, 1);
+            }
+        }
+        ifs.seekg(start + field_len + 4);
+    }
+    writev(c.new_data_len, 4);
+    ifs.seekg(c.data_start());
+
+    while(ifs.tellg() < c.data_end()){
+        char op = read_op(ifs);
+        if(op == 0x07){
+            int conn = read_conn(ifs);
+            if(c.indexdata[conn].new_count == 0) continue;
+            write_all(ifs, ofs);
+        } else{
+            if(s.new_offset.find(ifs.tellg() - c.data_start()) != s.new_offset.end()){
+                write_all(ifs, ofs);
+            }
+        }
+    }
+
+    for(std::map<int, IndexData>::iterator i = c.indexdata.begin(); i != c.indexdata.end(); i++){
+        IndexData& id = i->second;
+        if(id.new_count == 0) continue;
+        write(id, s, ifs, ofs);
+    }
+}
+
+
+void write(std::map<int, Connection>& map_conn, std::ifstream& ifs, std::ofstream& ofs){
+    for(std::map<int, Connection>::iterator i = map_conn.begin(); i != map_conn.end(); i++){
+        if(i->second.has_any_suitable_messages){
+            ifs.seekg(i->second.pos);
+            write_all(ifs, ofs);
+        }
+    }
+}
+
 
 void write(std::vector <Select>& selects, std::vector <Chunk>& chunks, std::ifstream& ifs, std::ofstream& ofs){
     for(unsigned int i = 0; i < chunks.size(); i++){
@@ -162,6 +163,7 @@ void write_chunk_info(Chunk& c, std::ifstream& ifs, std::ofstream& ofs){
     while(ifs.tellg() < c.ci.header_end()){
         int field_len;
         readv(field_len, 4);
+        writev(field_len, 4);
         long long cur_pos = ifs.tellg();
         std::string field_name = read_name(ifs);
         write_name(field_name, ofs);
@@ -181,13 +183,13 @@ void write_chunk_info(Chunk& c, std::ifstream& ifs, std::ofstream& ofs){
     c.ci.new_data_len = c.ci.new_count * 8;
     writev(c.ci.new_data_len, 4);
     ifs.seekg((long long)ifs.tellg() + 4);
-    long long curpos = ifs.tellg();
-    while(ifs.tellg() < curpos + c.ci.data_len){
-        int conn;
+    while(ifs.tellg() != c.ci.data_end()){
+        int conn, old_count;
         readv(conn, 4);
-        if(c.connections[conn].id.new_count != 0){
+        readv(old_count, 4);
+        if(c.indexdata[conn].new_count != 0){
             writev(conn, 4);
-            writev(c.connections[conn].id.new_count, 4);
+            writev(c.indexdata[conn].new_count, 4);
         }
     }
 }

@@ -17,3 +17,5 @@ void write_messages(long long chunk_data_start, Connection& c, Select& s, std::i
 void write_chunk_info(Chunk& c, std::ifstream& ifs, std::ofstream& ofs);
 
 void write_all_the_chunk_info(std::vector <Chunk>& chunks, std::ifstream& ifs, std::ofstream& ofs);
+
+void write(std::map<int, Connection>& map_conn, std::ifstream& ifs, std::ofstream& ofs);
