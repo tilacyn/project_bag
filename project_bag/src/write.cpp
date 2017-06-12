@@ -36,7 +36,7 @@ void write(BagHeader& bh, std::ifstream& ifs, std::ofstream& ofs){
 }
 
 
-void write_all(std::ifstream& ifs, std::ofstream& ofs){
+long long write_all(std::ifstream& ifs, std::ofstream& ofs){
     int header_len;
     readv(header_len, 4);
     writev(header_len, 4);
@@ -55,6 +55,7 @@ void write_all(std::ifstream& ifs, std::ofstream& ofs){
         readv(c, 1);
         writev(c, 1);
     }
+    return data_len + header_len + 8;
 }
 
 void write(IndexData& id, Select& s, std::ifstream& ifs, std::ofstream& ofs){
@@ -119,16 +120,25 @@ void write(Chunk& c, Select& s, std::ifstream& ifs, std::ofstream& ofs){
     }
     writev(c.new_data_len, 4);
     ifs.seekg(c.data_start());
-
+    long long curpos = 0;
     while(ifs.tellg() < c.data_end()){
         char op = read_op(ifs);
         if(op == 0x07){
             int conn = read_conn(ifs);
-            if(c.indexdata[conn].new_count == 0) continue;
-            write_all(ifs, ofs);
+            if(c.indexdata[conn].new_count == 0){
+                Record r;
+                r.skip_data(ifs), r.skip_header(ifs);
+                continue;
+            }
+            curpos += write_all(ifs, ofs);
         } else{
             if(s.new_offset.find(ifs.tellg() - c.data_start()) != s.new_offset.end()){
-                write_all(ifs, ofs);
+                s.new_offset[ifs.tellg() - c.data_start()] = curpos;
+                curpos += write_all(ifs, ofs);
+            } else{
+                Record r;
+                r.skip_data(ifs), r.skip_header(ifs);
+                continue;
             }
         }
     }
@@ -153,7 +163,8 @@ void write(std::map<int, Connection>& map_conn, std::ifstream& ifs, std::ofstrea
 
 void write(std::vector <Select>& selects, std::vector <Chunk>& chunks, std::ifstream& ifs, std::ofstream& ofs){
     for(unsigned int i = 0; i < chunks.size(); i++){
-        write(chunks[i], selects[i], ifs, ofs);
+        if(chunks[i].ci.new_count != 0)
+            write(chunks[i], selects[i], ifs, ofs);
     }
 }
 
@@ -196,7 +207,8 @@ void write_chunk_info(Chunk& c, std::ifstream& ifs, std::ofstream& ofs){
 
 void write_all_the_chunk_info(std::vector <Chunk>& chunks, std::ifstream& ifs, std::ofstream& ofs){
     for(unsigned int i = 0; i < chunks.size(); i++){
-        write_chunk_info(chunks[i], ifs, ofs);
+        if(chunks[i].ci.new_count != 0)
+            write_chunk_info(chunks[i], ifs, ofs);
     }
 }
 

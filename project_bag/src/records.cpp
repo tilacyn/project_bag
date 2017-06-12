@@ -11,6 +11,14 @@ std::string read_name(std::ifstream& ifs){
     return s;
 }
 
+std::string make_str(char* arr){
+    std::string s = "";
+    for(unsigned int i = 0; i < strlen(arr); i++){
+        s += arr[i];
+    }
+    return s;
+}
+
 std::string read_str(std::ifstream& ifs){
     char c;
     readv(c, 1);

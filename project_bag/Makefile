@@ -1,5 +1,5 @@
 CXX = C:\TDM-GCC-64\bin\g++
-CXXFLAGS = -O2 -Werror -Wall -std=c++11 -Iinclude
+CXXFLAGS = -O2 -Wall -std=c++11 -Iinclude
 LDFLAGS = 
 
 EXE = main

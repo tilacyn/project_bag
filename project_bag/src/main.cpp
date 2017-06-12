@@ -1,4 +1,6 @@
 #include "write.h"
+#include <exception>
+
 
 using namespace std;
 
@@ -42,17 +44,15 @@ void read_records(const char* in_file){
             bf.map_conn[c.conn].has_any_suitable_messages = false;
         }
     }
-    for(std::map<int, IndexData>::iterator i = bf.chunks[0].indexdata.begin(); i != bf.chunks[0].indexdata.end(); i++){
-        //cout << i->first << " " << i->second.count << "\n";
-    }
     cout << "Reading finished\n";
     seq_chunk_to_info(bf.chunks, bf.chunkinfo);
     ifs.close();
 }
 
-void select_data(const char* in_file, long long time_start, long long time_end, string topic){
+void select_data(const char* in_file, long long time_start, long long time_end,
+                 string topic, bool topic_regex, string msg_regex){
     ifstream ifs(in_file, ios::binary);
-    make_map(time_start, time_end, topic, bf, ifs);
+    make_map(time_start, time_end, topic, topic_regex, msg_regex, bf, ifs);
     cout << "Map Made\n";
     ifs.close();
 }
@@ -69,39 +69,48 @@ void write_file(const char* in_file, const char* out_file){
     cout << "New file created\n";
 }
 
-string make_str(char* arr){
-    string s = "";
-    for(unsigned int i = 0; i < strlen(arr); i++){
-        s += arr[i];
-    }
-    return s;
-}
-
 
 int main(int argc, char* argv[]){
     char* in_file = new char[100];
     char* out_file = new char[100];
     long long time_start = 0;
     long long time_end = 1e16;
+    bool topic_regex = false;
+    string msg_regex;
     string topic;
     for(int i = 1; i < argc; i++){
-        if(!strcmp(argv[i], "--in")){
+        if(!strcmp(argv[i], "--in") || !strcmp(argv[i], "-i")){
             strcpy(in_file, argv[++i]);
-        }else if(!strcmp(argv[i], "--out")){
+        }else if(!strcmp(argv[i], "--out") || !strcmp(argv[i], "-o")){
             strcpy(out_file, argv[++i]);
-        } else if(!strcmp(argv[i], "--time")){
+        } else if(!strcmp(argv[i], "--time") || !strcmp(argv[i], "-t")){
             time_start = atoll(argv[++i]);
             time_end = atoll(argv[++i]);
         } else if(!strcmp(argv[i], "--topic")){
+            if(!strcmp(argv[i + 1], "-r") || !strcmp(argv[i + 1], "--regex")){
+                topic_regex = true;
+                i++;
+            }
             topic = make_str(argv[++i]);
+        } else if(!strcmp(argv[i], "--msgfilter=regex")){
+            msg_regex = make_str(argv[++i]);
         }
     }
 
 
     read_records(in_file);
-    select_data(in_file, time_start, time_end, "");
+    select_data(in_file, time_start, time_end, topic, topic_regex, msg_regex);
     write_file(in_file, out_file);
     delete[] in_file;
     delete[] out_file;
+    cout << msg_regex << "\n";
+    /*
+    string sss = "Wowow";
+    regex rgx("^l.*");
+    if(std::regex_search(sss.begin(), sss.end(), rgx)){
+        cout << "MATCHES\n";
+    }
+    else cout << "DOESN'T\n";
+*/
     return 0;
 }

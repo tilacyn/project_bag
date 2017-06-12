@@ -9,6 +9,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <regex>
 
 #define readv(c, n) ifs.read((char*)&c, n)
 #define writev(c, n) ofs.write((char*)&c, n)
@@ -30,6 +31,8 @@ public:
 char read_op(std::ifstream& ifs);
 
 int read_conn(std::ifstream& ifs);
+
+std::string make_str(char* arr);
 
 std::string read_name(std::ifstream& ifs);
 

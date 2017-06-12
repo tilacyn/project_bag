@@ -10,7 +10,7 @@ void write(Chunk& c, Select& s, std::ifstream& ifs, std::ofstream& ofs);
 
 void write(IndexData& id, Select& s, std::ifstream& ifs, std::ofstream& ofs);
 
-void write_all(std::ifstream& ifs, std::ofstream& ofs);
+long long write_all(std::ifstream& ifs, std::ofstream& ofs);
 
 void write_messages(long long chunk_data_start, Connection& c, Select& s, std::ifstream& ifs, std::ofstream& ofs);
 
